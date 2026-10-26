@@ -1,24 +1,26 @@
 ///|
 /// Small UTF-8 JSON writer used by hot read-only responses.
 struct JsonOut {
-  priv buf : @buffer.Buffer
-  priv first : Array[Bool]
-  priv mut after_key : Bool
+  buf : @buffer.Buffer
+  first : Array[Bool]
+  mut after_key : Bool
 }
 
 ///|
 suberror JsonOutError {
   Decode(String)
-} derive(Show)
+}
 
 ///|
-fn JsonOut::lit(self : JsonOut, s : String) -> Unit {
-  self.buf.write_bytesview(@utf8.encode(s)[:])
+impl Show for JsonOutError with fn output(self, logger) {
+  match self {
+    Decode(msg) => logger.write_string("JsonOutError: " + msg)
+  }
 }
 
 ///|
 fn JsonOut::new(size_hint~ : Int32 = 1024) -> JsonOut {
-  { buf: @buffer.new(size_hint~), first: [true], after_key: false, }
+  { buf: @buffer.Buffer(size_hint~), first: [true], after_key: false, }
 }
 
 ///|
@@ -119,13 +121,7 @@ fn JsonOut::key(self : JsonOut, k : String) -> Unit {
 }
 
 ///|
-fn JsonOut::str(self : JsonOut, s : String) -> Unit {
-  self.prefix()
-  self.escape_bytes(@utf8.encode(s)[:])
-}
-
-///|
-fn JsonOut::str_raw(self : JsonOut, cell : Bytes?) -> Unit raise {
+fn JsonOut::str_raw(self : JsonOut, cell : Bytes?) -> Unit {
   match cell {
     Some(bytes) => {
       self.prefix()

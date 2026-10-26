@@ -13,9 +13,15 @@ struct DbUrl {
 
 ///|
 suberror ConfigError {
-  Missing(String)
   Bad(String)
-} derive(Show)
+}
+
+///|
+impl Show for ConfigError with fn output(self, logger) {
+  match self {
+    Bad(msg) => logger.write_string(msg)
+  }
+}
 
 ///|
 fn env_or(name : String, fallback : String) -> String {
@@ -134,22 +140,18 @@ async fn main {
     batch=batch_size,
     batch_wait_ms~,
   ) catch {
-    e => abort("invalid pool config: \{e}")
+    e => abort("invalid pool config: \{e.message()}")
   }
   let cfg = @pgpool.Config::Config(
     [@pgpool.ConnectionTarget::ConnectionTarget(host=db.host, port=db.port)],
     user=db.user,
     dbname=db.dbname,
     password?=db.password,
-    application_name="conduit",
-    ssl_mode=@client.SslMode::Disable,
     pool=pool_cfg,
   ) catch {
-    e => abort("invalid database config: \{e}")
+    e => abort("invalid database config: \{e.message()}")
   }
-  let (pool, executor) = @pgpool.Pool::create(cfg) catch {
-    e => abort("cannot create pool: \{e}")
-  }
+  let (pool, executor) = @pgpool.Pool::create(cfg)
   let app : App = { pool, key: jwt_key(secret), }
   let addr = @socket.Addr::parse("\{host}:\{port}") catch {
     e => abort("bad listen address \{host}:\{port}: \{e}")

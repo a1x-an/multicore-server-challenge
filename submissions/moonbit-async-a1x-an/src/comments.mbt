@@ -73,7 +73,7 @@ async fn list_comments(app : App, req : @http.Request, slug : String) -> Resp {
   out.arr_start()
   for r in rows {
     match (r.get(1) : Int64?) {
-      Some(id) => comment_raw(out, r)
+      Some(_) => comment_raw(out, r)
       None => ()
     }
   }

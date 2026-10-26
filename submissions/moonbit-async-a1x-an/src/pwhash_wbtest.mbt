@@ -42,7 +42,7 @@ async test "pwhash matches hackwaly/bcrypt at cost 4" {
 ///|
 async test "pwhash verifies the seed hash at cost 10" {
   let h = "$2a$10$ZSfEoPvlcsj2XfvsSeK25em4NZ9Jm7ntGqXuLgQfHEeZPYB8899wq"
-  let tail = h[4:].to_string()
+  let tail = h[4:].to_owned()
   assert_true(pwhash_verify(b"password123", h) is Ok(true))
   assert_true(pwhash_verify(b"password123", "$2b$" + tail) is Ok(true))
   assert_true(pwhash_verify(b"password123", "$2y$" + tail) is Ok(true))
@@ -60,9 +60,9 @@ async test "pwhash rejects malformed hashes" {
       "$2x$10$" + tail,
       "$2b$32$" + tail,
       "$2b$03$" + tail,
-      "$2b$10$" + tail[:40].to_string(),
+      "$2b$10$" + tail[:40].to_owned(),
       "$2b$10$" + tail + "Q",
-      "$2b$10$!" + tail[1:].to_string(),
+      "$2b$10$!" + tail[1:].to_owned(),
       "$2b10$" + tail,
     ] {
     assert_false(check_password("password123", h))

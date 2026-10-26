@@ -1,4 +1,10 @@
 ///|
+fn JsonOut::str(self : JsonOut, s : String) -> Unit {
+  self.prefix()
+  self.escape_bytes(@utf8.encode(s)[:])
+}
+
+///|
 fn jsonw_bytes(f : (JsonOut) -> Unit) -> Bytes {
   let out = JsonOut::new()
   f(out)
@@ -95,10 +101,10 @@ fn jsonw_text_array_cell(
   oid : Int32,
   values : Array[Bytes?],
 ) -> Bytes {
-  let b = @buffer.new()
+  let b = @buffer.Buffer()
   b.write_int_be(ndim)
   b.write_int_be(if values.iter().any(fn(x) { x is None }) { 1 } else { 0 })
-  b.write_uint_be(oid.to_uint())
+  b.write_uint_be(oid.reinterpret_as_uint())
   if ndim == 1 {
     b.write_int_be(values.length())
     b.write_int_be(1)

@@ -2,7 +2,6 @@ import {
   "moonbitlang/async",
   "moonbitlang/async/socket",
   "conduit/httpfacade" @http,
-  "moonbitlang/async/io",
   "moonbitlang/async/aqueue",
   "moonbitlang/async/fs",
   "moonbitlang/core/env",

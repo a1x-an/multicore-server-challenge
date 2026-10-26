@@ -32,12 +32,6 @@ let article_list_columns : String = "SELECT a.id, a.slug, a.title, a.description
 let article_list_from : String = " FROM articles a JOIN users u ON u.id = a.author_id"
 
 ///|
-let article_list_select : String = article_list_columns + article_list_from
-
-///|
-let order_page : String = " ORDER BY a.id DESC LIMIT $2 OFFSET $3"
-
-///|
 let article_full_select : String = "SELECT a.id, a.slug, a.title, a.description, a.body, " +
   ts_created +
   ", " +

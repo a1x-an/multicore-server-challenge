@@ -39,7 +39,7 @@ fn bc_bcrypt_base64_decode(
   text : String,
   max_length : Int32,
 ) -> Result[Bytes, PwhashError] {
-  let out = Array::new(capacity=max_length)
+  let out : Array[Byte] = Array(capacity=max_length)
   let mut offset = 0
   while offset < text.length() - 1 && out.length() < max_length {
     let c1 = bc_bcrypt_base64_index(text[offset].to_int())
@@ -69,7 +69,7 @@ fn bc_bcrypt_base64_decode(
     out.push((((c3 & 0x03) << 6) | c4).to_byte())
   }
   if out.length() == max_length {
-    Ok(Bytes::from_array(out.view()))
+    Ok(Bytes::from_array(out[:]))
   } else {
     Err(InvalidBase64)
   }

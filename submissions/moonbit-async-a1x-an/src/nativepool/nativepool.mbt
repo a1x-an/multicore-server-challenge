@@ -9,7 +9,14 @@ pub struct PoolConfig {
 ///|
 pub suberror ConfigError {
   Invalid(String)
-} derive(Show)
+}
+
+///|
+pub fn ConfigError::message(self : ConfigError) -> String {
+  match self {
+    Invalid(msg) => msg
+  }
+}
 
 ///|
 pub fn PoolConfig::PoolConfig(
@@ -58,8 +65,6 @@ pub fn Config::Config(
   user~ : String,
   dbname~ : String,
   password? : String,
-  application_name~ : String,
-  ssl_mode~ : @client.SslMode,
   pool~ : PoolConfig,
 ) -> Config raise ConfigError {
   if targets.length() == 0 {
@@ -196,48 +201,6 @@ impl @client.ToSql for IntArrayParam with fn to_sql(self, buf) {
 }
 
 ///|
-/// Small lease-bookkeeping core used by the pool. It is deliberately pure so
-/// native tests can exercise saturation, waiting, and replacement semantics.
-priv struct LeaseBook {
-  capacity : Int32
-  leased : Array[Bool]
-}
-
-///|
-fn LeaseBook::new(capacity : Int32) -> LeaseBook {
-  { capacity, leased: [], }
-}
-
-///|
-fn LeaseBook::acquire(self : LeaseBook) -> Int32? {
-  for i in 0..<self.leased.length() {
-    if !self.leased[i] {
-      self.leased[i] = true
-      return Some(i)
-    }
-  }
-  if self.leased.length() < self.capacity {
-    self.leased.push(true)
-    return Some(self.leased.length() - 1)
-  }
-  None
-}
-
-///|
-fn LeaseBook::release(self : LeaseBook, index : Int32) -> Unit {
-  if index >= 0 && index < self.leased.length() {
-    self.leased[index] = false
-  }
-}
-
-///|
-fn LeaseBook::discard(self : LeaseBook, index : Int32) -> Unit {
-  if index >= 0 && index < self.leased.length() {
-    ignore(self.leased.remove(index))
-  }
-}
-
-///|
 pub fn Pool::create(cfg : Config) -> (Pool, Executor) {
   let pool : Pool = {
     cfg,
@@ -251,7 +214,7 @@ pub fn Pool::create(cfg : Config) -> (Pool, Executor) {
 }
 
 ///|
-pub fn Pool::ready(self : Pool) -> Unit {
+pub fn Pool::ready(_self : Pool) -> Unit {
   ()
 }
 
@@ -275,7 +238,7 @@ async fn Pool::connect(self : Pool) -> @client.Conn {
         None => None
       }
     },
-    async fn() { tcp.close() },
+    fn() { tcp.close() },
     () => true,
     @env.rand,
   )
@@ -309,23 +272,17 @@ async fn Pool::acquire_slot(self : Pool, lane : Lane) -> (Int32, @client.Conn) {
       // Close the broken connection (and its server backend) before replacing it.
       lane.conns[i].discard()
       self.stats[2] = self.stats[2] + 1
-      let conn = self.connect() catch {
-        e => {
-          lane.leased[i] = false
-          lane.sema.release()
-          raise e
-        }
+      errdefer {
+        lane.leased[i] = false
+        lane.sema.release()
       }
+      let conn = self.connect()
       lane.conns[i] = conn
       return (i, conn)
     }
   }
-  let conn = self.connect() catch {
-    e => {
-      lane.sema.release()
-      raise e
-    }
-  }
+  errdefer lane.sema.release()
+  let conn = self.connect()
   lane.conns.push(conn)
   lane.leased.push(true)
   (lane.conns.length() - 1, conn)
@@ -500,12 +457,7 @@ async fn Pool::batch_worker(self : Pool, g : BatchGroup) -> Unit {
   while true {
     let first = g.queue.get() catch { _ => return }
     if self.cfg.batch_wait_ms > 0 && !first.retried {
-      @async.sleep(self.cfg.batch_wait_ms) catch {
-        e => {
-          send_reply(first, Fail(@client.map_error(e)))
-          return
-        }
-      }
+      @async.sleep(self.cfg.batch_wait_ms)
     }
     let batch = [first]
     let result = try {

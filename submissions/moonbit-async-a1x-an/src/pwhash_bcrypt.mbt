@@ -63,9 +63,9 @@ pub async fn pwhash_hash_password(
   } else if salt.length() != salt_length {
     Err(InvalidSaltLength(salt.length()))
   } else {
-    let salt_text = bc_bcrypt_base64_encode(salt.view(), salt_length)
-    let digest = bc_digest(password.view(), salt.view(), cost)
-    let hash_text = bc_bcrypt_base64_encode(digest.view(), 23)
+    let salt_text = bc_bcrypt_base64_encode(salt[:], salt_length)
+    let digest = bc_digest(password[:], salt[:], cost)
+    let hash_text = bc_bcrypt_base64_encode(digest[:], 23)
     Ok("$2b$" + bc_two_digit(cost) + "$" + salt_text + hash_text)
   }
 }
@@ -78,14 +78,14 @@ pub async fn pwhash_verify(
   match parse_hash(hash) {
     Err(err) => Err(err)
     Ok(parsed) => {
-      let digest = bc_digest(password.view(), parsed.salt.view(), parsed.cost)
+      let digest = bc_digest(password[:], parsed.salt[:], parsed.cost)
       let recomputed = "$2" +
         parsed.minor.to_string() +
         "$" +
         bc_two_digit(parsed.cost) +
         "$" +
         parsed.salt_text +
-        bc_bcrypt_base64_encode(digest.view(), 23)
+        bc_bcrypt_base64_encode(digest[:], 23)
       Ok(bc_timing_safe_equal(hash, recomputed))
     }
   }

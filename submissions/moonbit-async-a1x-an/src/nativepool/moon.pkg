@@ -2,7 +2,6 @@ import {
   "conduit/pgcore" @client,
   "moonbit-community/postgres/protocol" @proto,
   "moonbitlang/async",
-  "moonbitlang/async/cond_var",
   "moonbitlang/async/aqueue",
   "moonbitlang/async/socket",
   "moonbitlang/core/env",

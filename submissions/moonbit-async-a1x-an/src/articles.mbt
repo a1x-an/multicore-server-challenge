@@ -1,41 +1,6 @@
 // Article handlers: list, feed, CRUD and favorites.
 
 ///|
-/// Build the Article JSON object from a list/full select row.
-/// List rows omit "body" per the spec.
-fn article_row_json(r : @client.Row, full~ : Bool) -> Json raise {
-  let a : Map[String, Json] = Map([])
-  a["slug"] = Json::string(r.get(1))
-  a["title"] = Json::string(r.get(2))
-  a["description"] = Json::string(r.get(3))
-  let base = if full {
-    let body : String = r.get(4)
-    a["body"] = Json::string(body)
-    5
-  } else {
-    4
-  }
-  a["createdAt"] = Json::string(r.get(base))
-  a["updatedAt"] = Json::string(r.get(base + 1))
-  let tag_list : Array[String] = r.get(base + 2)
-  let tags : Array[Json] = []
-  for t in tag_list {
-    tags.push(Json::string(t))
-  }
-  a["tagList"] = Json::array(tags)
-  a["favorited"] = Json::boolean(r.get(base + 4))
-  let favs : Int64 = r.get(base + 3)
-  a["favoritesCount"] = Json::number(favs.to_double(), repr=favs.to_string())
-  a["author"] = profile_json(
-    r.get(base + 5),
-    r.get(base + 6),
-    r.get(base + 7),
-    r.get(base + 8),
-  )
-  Json::object(a)
-}
-
-///|
 fn article_row_raw(out : JsonOut, r : @client.Row, full~ : Bool) -> Unit raise {
   out.obj_start()
   out.key("slug")

@@ -44,13 +44,13 @@ fn verify_token(key : @jwt.Keyed, token : StringView) -> Int64 {
   }
   match claims.get("sub") {
     Some(j) =>
-      match j.as_string() {
-        Some(s) =>
+      match j {
+        String(s) =>
           match parse_uint(s[:]) {
             Some(id) if id > 0 => id
             _ => 0
           }
-        None => 0
+        _ => 0
       }
     None => 0
   }

@@ -272,9 +272,9 @@ pub impl FromSql for Int64 with fn from_sql(oid, cell) {
     None => raise err_decode("unexpected NULL int64")
   }
   match oid {
-    20U => pe(fn() { @types.int8_from_sql(c) })
-    23U => pe(fn() { @types.int4_from_sql(c).to_int64() })
-    21U => pe(fn() { @types.int2_from_sql(c).to_int64() })
+    20U => pe(() => @types.int8_from_sql(c))
+    23U => pe(() => @types.int4_from_sql(c).to_int64())
+    21U => pe(() => @types.int2_from_sql(c).to_int64())
     _ => raise err_decode("int64 from oid " + oid.to_string())
   }
 }
@@ -296,7 +296,7 @@ pub impl FromSql for Bool with fn from_sql(oid, cell) {
     None => raise err_decode("unexpected NULL bool")
   }
   if oid == 16U {
-    pe(fn() { @types.bool_from_sql(c) })
+    pe(() => @types.bool_from_sql(c))
   } else {
     raise err_decode("bool from oid " + oid.to_string())
   }
@@ -333,7 +333,7 @@ pub impl FromSql for Array[String] with fn from_sql(oid, cell) {
     Some(c) => c
     None => raise err_decode("unexpected NULL array")
   }
-  let arr = pe(fn() { @types.array_from_sql(c) })
+  let arr = pe(() => @types.array_from_sql(c))
   if arr.element_type != 25U && arr.element_type != 1043U {
     raise err_decode("text[] element oid " + arr.element_type.to_string())
   }

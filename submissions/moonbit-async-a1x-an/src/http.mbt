@@ -77,7 +77,7 @@ fn auth(app : App, req : @http.Request) -> (Int64, String, Bool) {
     Some(h) =>
       match h.strip_prefix("Token ") {
         Some(tok) =>
-          (verify_token(app.key, tok.to_string()[:]), tok.to_string(), true)
+          (verify_token(app.key, tok), tok.to_owned(), true)
         None => (0, "", true)
       }
   }
@@ -91,7 +91,7 @@ fn response_bytes(code : Int32, head_only : Bool, close : Bool, body : Bytes) ->
     "Content-Type: application/json\r\n" +
     (if close { "Connection: close\r\n" } else { "" }) +
     "Content-Length: \{body.length()}\r\n\r\n"
-  let out = @buffer.new(size_hint=head.length() + body.length())
+  let out = @buffer.Buffer(size_hint=head.length() + body.length())
   out.write_string_utf8(head)
   if !head_only && body.length() > 0 { out.write_bytesview(body[:]) }
   out.to_bytes()
@@ -149,7 +149,7 @@ async fn serve_conn(app : App, tcp : @socket.Tcp) -> Unit {
             Some(v) => v.to_lower() == "close"
             None => false
           }
-          let conn = @http.ServerConnection::new(async fn() { body })
+          let conn = @http.ServerConnection::new(fn() { body })
           let resp = dispatch(app, req, conn) catch {
             e => {
               println("handler error on \{req.path}: \{e}")

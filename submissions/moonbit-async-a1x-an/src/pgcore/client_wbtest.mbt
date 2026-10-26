@@ -6,7 +6,7 @@
 
 ///|
 fn[T : ToSql] encode_param(v : T) -> Bytes raise {
-  let buf = @buffer.new()
+  let buf = @buffer.Buffer()
   ignore(v.to_sql(buf))
   buf.to_bytes()
 }
@@ -14,7 +14,7 @@ fn[T : ToSql] encode_param(v : T) -> Bytes raise {
 ///|
 /// Build a binary text[] cell: ndim=1, hasnull flag, elem oid 25.
 fn text_arr_cell(elems : Array[Bytes?], hasnull : Int32) -> Bytes {
-  let buf = @buffer.new()
+  let buf = @buffer.Buffer()
   buf.write_int_be(1)
   buf.write_int_be(hasnull)
   buf.write_uint_be(25U)
@@ -34,7 +34,7 @@ fn text_arr_cell(elems : Array[Bytes?], hasnull : Int32) -> Bytes {
 
 ///|
 fn b8(v : BytesView) -> Bytes {
-  v.to_bytes()
+  v.to_owned()
 }
 
 ///|
@@ -125,7 +125,7 @@ fn test_frame(body : FixedArray[Byte], tag : Byte) -> FixedArray[Byte] {
 
 ///|
 fn owned_fixed(f : FixedArray[Byte]) -> Bytes {
-  let b = @buffer.new(size_hint=f.length())
+  let b = @buffer.Buffer(size_hint=f.length())
   for x in f {
     b.write_byte(x)
   }

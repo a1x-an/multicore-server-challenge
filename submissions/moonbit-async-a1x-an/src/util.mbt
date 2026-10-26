@@ -24,9 +24,9 @@ fn parse_uint(s : StringView) -> Int64? {
 ///|
 fn hex_val(b : Byte) -> Int32 {
   match b {
-    '0'..<='9' => b.to_int() - '0'.to_int()
-    'a'..<='f' => b.to_int() - 'a'.to_int() + 10
-    'A'..<='F' => b.to_int() - 'A'.to_int() + 10
+    b'0'..<=b'9' => b.to_int() - b'0'.to_int()
+    b'a'..<=b'f' => b.to_int() - b'a'.to_int() + 10
+    b'A'..<=b'F' => b.to_int() - b'A'.to_int() + 10
     _ => -1
   }
 }

@@ -1,10 +1,10 @@
 ///|
 pub struct Config {
-  pub host : String
-  pub port : Int32
-  pub user : String
-  pub password : String?
-  pub dbname : String
+  host : String
+  port : Int32
+  user : String
+  password : String?
+  dbname : String
 }
 
 ///|
@@ -113,13 +113,11 @@ pub struct CachedStatement {
 
 ///|
 async fn read_frame(conn : Conn) -> @backend.Message raise ClientError {
+  errdefer {
+    conn.broken = true
+  }
   for ;; {
-    let frame = conn.frames.next_frame() catch {
-      e => {
-        conn.broken = true
-        raise e
-      }
-    }
+    let frame = conn.frames.next_frame()
     match frame {
       Some(f) =>
         match (@backend.Message::parse(f[:]) catch { _ => None }) {
@@ -290,7 +288,7 @@ pub async fn startup_auth(conn : Conn, cfg : Config) -> Unit raise ClientError {
     (u8s("jit")[:], u8s("off")[:]),
     (u8s("max_parallel_workers_per_gather")[:], u8s("0")[:]),
   ]
-  let ob = @buffer.new()
+  let ob = @buffer.Buffer()
   @frontend.startup_message(params.iter(), ob) catch {
     _ => raise ClientError::Protocol("startup frame")
   }
@@ -301,7 +299,7 @@ pub async fn startup_auth(conn : Conn, cfg : Config) -> Unit raise ClientError {
     match m {
       @backend.Message::AuthenticationOk => ()
       @backend.Message::AuthenticationCleartextPassword => {
-        let pb = @buffer.new()
+        let pb = @buffer.Buffer()
         match cfg.password {
           Some(p) =>
             @frontend.password_message(u8s(p)[:], pb) catch {
@@ -344,7 +342,7 @@ pub async fn startup_auth(conn : Conn, cfg : Config) -> Unit raise ClientError {
           },
         )
         let s = scram.unwrap()
-        let sb = @buffer.new()
+        let sb = @buffer.Buffer()
         @frontend.sasl_initial_response(
           u8s("SCRAM-SHA-256")[:],
           s.message()[:],
@@ -362,7 +360,7 @@ pub async fn startup_auth(conn : Conn, cfg : Config) -> Unit raise ClientError {
             s.update(body.data()) catch {
               _ => raise ClientError::Protocol("sasl update")
             }
-            let sb = @buffer.new()
+            let sb = @buffer.Buffer()
             @frontend.sasl_response(s.message()[:], sb) catch {
               _ => raise ClientError::Protocol("sasl response frame")
             }
@@ -420,7 +418,7 @@ pub async fn run_frames(
       n
     }
   }
-  let ob = @buffer.new()
+  let ob = @buffer.Buffer()
   let empty = b""
   if !hit {
     match cache_evict_lru(conn) {
@@ -449,7 +447,7 @@ pub async fn run_frames(
     u8s(name)[:],
     [0].iter(),
     params.iter(),
-    fn(v, b) { v.to_sql(b) },
+    (v, b) => v.to_sql(b),
     [1].iter(),
     ob,
   ) catch {
@@ -458,9 +456,7 @@ pub async fn run_frames(
   @frontend.execute(empty[:], 0, ob) catch {
     _ => raise ClientError::Protocol("execute frame")
   }
-  @frontend.sync(ob) catch {
-    _ => raise ClientError::Protocol("sync frame")
-  }
+  @frontend.sync(ob)
   conn.in_flight = true
   if !(conn.io.is_open)() {
     conn.broken = true

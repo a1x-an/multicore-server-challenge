@@ -43,11 +43,11 @@ fn get_app() -> App raise {
     None => {
       let db_url = match @env.get_env_var("DATABASE_URL") {
         Some(v) if v != "" => v
-        _ => raise ConfigError::Missing("DATABASE_URL")
+        _ => raise ConfigError::Bad("DATABASE_URL is required")
       }
       let secret = match @env.get_env_var("JWT_SECRET") {
         Some(v) if v != "" => v
-        _ => raise ConfigError::Missing("JWT_SECRET")
+        _ => raise ConfigError::Bad("JWT_SECRET is required")
       }
       let db = parse_database_url(db_url)
       let cfg = @pgpool.Config::new(db.host, db.port, db.user, db.password, db.dbname)

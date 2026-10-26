@@ -11,7 +11,3 @@ import {
 warnings = "-44"
 
 supported_targets = "+native+wasm"
-
-import {
-  "moonbitlang/core/test",
-} for "test"

@@ -12,7 +12,7 @@ pub(all) enum Method {
   Put
   Delete
   Other
-} derive(Show, Eq)
+}
 
 ///|
 pub type Headers = Map[String, String]
@@ -67,7 +67,7 @@ pub async fn ServerConnection::read_all(self : ServerConnection) -> BodyData rai
   match self.cached {
     Some(b) => { bytes: b }
     None => {
-      let b = (self.body_reader)() catch { e => raise e }
+      let b = (self.body_reader)()
       self.cached = Some(b)
       { bytes: b }
     }
